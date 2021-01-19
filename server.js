@@ -4,12 +4,24 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const app = express();
 const moment = require('moment');
+const axios = require('axios');
+require('dotenv').config();
+
+//slack
+const { createEventAdapter } = require('@slack/events-api');
+const slackSigningSecret = process.env.SIGNING_SECRET;
+const slackEvents = createEventAdapter(slackSigningSecret);
+//end slack
+
+/* slackEvents.on('message', (event) => {
+    console.log(`Received a message event: user ${event.user} in channel ${event.channel} says ${event.text}`);
+}); */
+
 
 app.set('view engine', 'ejs');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname + '/views')));
-
 app.set('port', (process.env.PORT || 5000));
 
 const posts = [
@@ -36,6 +48,24 @@ app.post('/posts/new', (req, res) => {
 
     res.status(200).json(newpost);
 });
+
+app.post('/slack/writebot', async (req, res) => {
+    const {text} = req.body;
+    const url = process.env.WEBHOOK;
+    
+    const slackResult = await axios.post(url, {
+        text 
+      })
+      .then(function (response) {
+        console.log(response);
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+
+    res.json({response: slackResult});
+
+  });
 
 
 app.listen(app.get('port'), function() {
